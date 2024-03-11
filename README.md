@@ -19,3 +19,7 @@ Application will be then running on port `5000`
 $ curl localhost:5000/ping
 { "status": "pong" }
 ```
+
+## Notes
+
+> Things I should talk about to explain my tech choices.
