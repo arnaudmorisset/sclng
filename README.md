@@ -25,4 +25,10 @@ $ curl localhost:5000/ping
 > Things I should talk about to explain my tech choices.
 
 - Moving to architecture recommended for Go servers
-- Using a Makefile for devenv + air for live reload
+- Removing docker for local env and using only air for live reload
+- Using stdlib for errors instead of Dave Chenney's package
+- Reworking main function
+
+Feedbacks:
+
+- Not please with how errors are handled at the router level
