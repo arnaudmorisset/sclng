@@ -23,3 +23,6 @@ $ curl localhost:5000/ping
 ## Notes
 
 > Things I should talk about to explain my tech choices.
+
+- Moving to architecture recommended for Go servers
+- Using a Makefile for devenv + air for live reload
