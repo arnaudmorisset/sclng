@@ -7,7 +7,8 @@ import (
 )
 
 type GithubConfig struct {
-	Token string `envconfig:"GITHUB_TOKEN"`
+	BaseURL string `envconfig:"GITHUB_BASE_URL"`
+	Token   string `envconfig:"GITHUB_TOKEN"`
 }
 
 type Config struct {

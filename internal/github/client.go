@@ -13,7 +13,7 @@ type Owner struct {
 
 type Repo struct {
 	FullName string `json:"full_name"`
-	Owner    string `json:"owner"`
+	Owner    Owner  `json:"owner"`
 }
 
 func GetLastHundredRepos(cfg config.GithubConfig) ([]Repo, error) {
@@ -26,7 +26,7 @@ func GetLastHundredRepos(cfg config.GithubConfig) ([]Repo, error) {
 		SetHeader("X-GitHub-Api-Version", "2022-11-28").
 		SetBearerAuthToken(cfg.Token).
 		SetSuccessResult(&resp).
-		Get("https://api.github.com/repositories")
+		Get(cfg.BaseURL + "/repositories")
 
 	if err != nil {
 		return resp, fmt.Errorf("fail to get the repositories: %s", err.Error())
