@@ -28,6 +28,7 @@ $ curl localhost:5000/ping
 - Removing docker for local env and using only air for live reload
 - Using stdlib for errors instead of Dave Chenney's package
 - Reworking main function
+- Secrets in env vars
 
 Feedbacks:
 

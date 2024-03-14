@@ -6,8 +6,13 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+type GithubConfig struct {
+	Token string `envconfig:"GITHUB_TOKEN"`
+}
+
 type Config struct {
-	Port int `envconfig:"PORT" default:"8080"`
+	Port   int `envconfig:"PORT" default:"8080"`
+	Github GithubConfig
 }
 
 func NewConfig() (Config, error) {

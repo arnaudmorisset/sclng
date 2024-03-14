@@ -1,2 +1,5 @@
 # Ignore air output
 tmp/
+
+# Ignore secrets environment file
+.env_vars
