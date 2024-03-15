@@ -17,7 +17,19 @@ type Repo struct {
 	Name     string `json:"name"`
 }
 
-func GetLastHundredRepos(cfg config.GithubConfig) ([]Repo, error) {
+type GithubClient interface {
+	GetLastHundredRepos() ([]Repo, error)
+}
+
+type GithubClientImpl struct {
+	cfg config.GithubConfig
+}
+
+func NewGithubClient(cfg config.GithubConfig) GithubClient {
+	return GithubClientImpl{cfg: cfg}
+}
+
+func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 	var resp []Repo
 
 	c := req.C()
@@ -25,9 +37,9 @@ func GetLastHundredRepos(cfg config.GithubConfig) ([]Repo, error) {
 	_, err := c.R().
 		SetHeader("Accept", "application/vnd.github+json").
 		SetHeader("X-GitHub-Api-Version", "2022-11-28").
-		SetBearerAuthToken(cfg.Token).
+		SetBearerAuthToken(g.cfg.Token).
 		SetSuccessResult(&resp).
-		Get(cfg.BaseURL + "/repositories")
+		Get(g.cfg.BaseURL + "/repositories")
 
 	if err != nil {
 		return resp, fmt.Errorf("fail to get the repositories: %s", err.Error())

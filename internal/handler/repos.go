@@ -1,4 +1,4 @@
-package github
+package handler
 
 import (
 	"encoding/json"
@@ -21,11 +21,11 @@ type ReposResponse struct {
 	Repositories []Repo `json:"repositories"`
 }
 
-func NewReposHandler(cfg config.Config) handlers.HandlerFunc {
+func NewReposHandler(cfg config.Config, gh github.GithubClient) handlers.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 		log := logger.Get(r.Context())
 
-		repos, err := github.GetLastHundredRepos(cfg.Github)
+		repos, err := gh.GetLastHundredRepos()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			e := fmt.Errorf("fail to get the repositories: %s", err.Error())

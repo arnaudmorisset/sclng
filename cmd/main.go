@@ -8,8 +8,8 @@ import (
 	"github.com/Scalingo/go-handlers"
 	"github.com/Scalingo/go-utils/logger"
 	"github.com/arnaudmorisset/sclng/internal/config"
-	"github.com/arnaudmorisset/sclng/internal/handler/github"
-	"github.com/arnaudmorisset/sclng/internal/handler/healthcheck"
+	"github.com/arnaudmorisset/sclng/internal/github"
+	"github.com/arnaudmorisset/sclng/internal/handler"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,10 +30,12 @@ func run(log logrus.FieldLogger) error {
 		return fmt.Errorf("fail to parse the configuration: %s", err.Error())
 	}
 
+	log.Info("initializing Github client")
+	gh := github.NewGithubClient(cfg.Github)
+
 	log.Info(("initializing API"))
 	router := handlers.NewRouter(log)
-	router.HandleFunc("/ping", healthcheck.NewPongHandler())
-	router.HandleFunc("/repos", github.NewReposHandler(cfg))
+	router.HandleFunc("/repos", handler.NewReposHandler(cfg, gh))
 
 	log.WithField("port", cfg.Port).Info("listening...")
 	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), router)
