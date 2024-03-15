@@ -14,6 +14,7 @@ type Owner struct {
 type Repo struct {
 	FullName string `json:"full_name"`
 	Owner    Owner  `json:"owner"`
+	Name     string `json:"name"`
 }
 
 func GetLastHundredRepos(cfg config.GithubConfig) ([]Repo, error) {

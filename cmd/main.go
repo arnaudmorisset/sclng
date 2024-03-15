@@ -35,10 +35,6 @@ func run(log logrus.FieldLogger) error {
 	router.HandleFunc("/ping", healthcheck.NewPongHandler())
 	router.HandleFunc("/repos", github.NewReposHandler(cfg))
 
-	// Initialize web server and configure the following routes:
-	// GET /repos
-	// GET /stats
-
 	log.WithField("port", cfg.Port).Info("listening...")
 	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), router)
 	if err != nil {
