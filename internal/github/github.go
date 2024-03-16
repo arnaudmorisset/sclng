@@ -5,6 +5,7 @@ import (
 
 	"github.com/arnaudmorisset/sclng/internal/config"
 	"github.com/imroc/req/v3"
+	"github.com/sirupsen/logrus"
 	"github.com/sourcegraph/conc/iter"
 )
 
@@ -26,18 +27,19 @@ type GithubClient interface {
 
 type GithubClientImpl struct {
 	cfg config.GithubConfig
+	log logrus.FieldLogger
+	clt *req.Client
 }
 
-func NewGithubClient(cfg config.GithubConfig) GithubClient {
-	return GithubClientImpl{cfg: cfg}
+func NewGithubClient(cfg config.GithubConfig, log logrus.FieldLogger) GithubClient {
+	return GithubClientImpl{cfg: cfg, log: log, clt: req.C()}
 }
 
 func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 	var repos []Repo
 
-	c := req.C()
-
-	_, err := c.R().
+	g.log.Info("Getting the last 100 public repositories from Github")
+	_, err := g.clt.R().
 		SetHeader("Accept", "application/vnd.github+json").
 		SetHeader("X-GitHub-Api-Version", "2022-11-28").
 		SetBearerAuthToken(g.cfg.Token).
@@ -50,8 +52,10 @@ func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 
 	// Done concurrently
 	iter.ForEach(repos, func(repo *Repo) {
+		g.log.Info("Getting the languages for the repository ", repo.FullName)
 		languages, err := g.GetRepoLanguages(repo.LanguagesURL)
 		if err != nil {
+			g.log.Error("Fail to get the languages for the repository ", repo.FullName, ": ", err.Error())
 			return
 		}
 		repo.Languages = languages
@@ -63,9 +67,8 @@ func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 func (g GithubClientImpl) GetRepoLanguages(languagesURL string) (map[string]int, error) {
 	var languages map[string]int
 
-	c := req.C()
-
-	_, err := c.R().
+	g.log.Info("Getting the languages from ", languagesURL)
+	_, err := g.clt.R().
 		SetHeader("Accept", "application/vnd.github+json").
 		SetHeader("X-GitHub-Api-Version", "2022-11-28").
 		SetBearerAuthToken(g.cfg.Token).

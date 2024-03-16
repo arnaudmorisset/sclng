@@ -31,7 +31,7 @@ func run(log logrus.FieldLogger) error {
 	}
 
 	log.Info("initializing Github client")
-	gh := github.NewGithubClient(cfg.Github)
+	gh := github.NewGithubClient(cfg.Github, log)
 
 	log.Info(("initializing API"))
 	router := handlers.NewRouter(log)
