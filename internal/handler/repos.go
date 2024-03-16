@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/Scalingo/go-handlers"
 	"github.com/Scalingo/go-utils/logger"
@@ -30,7 +31,26 @@ func NewReposHandler(cfg config.Config, gh github.GithubClient) handlers.Handler
 	return func(w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 		log := logger.Get(r.Context())
 
-		repos, err := gh.GetLastHundredRepos()
+		params, err := url.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			e := fmt.Errorf("fail to parse the query parameters: %s", err.Error())
+			log.WithError(e).Error(e.Error())
+			return e
+		}
+
+		filters := github.Filters{
+			Language: params.Get("language"),
+			License:  params.Get("license"),
+		}
+
+		var repos []github.Repo
+		if filters.Language != "" || filters.License != "" {
+			repos, err = gh.GetLastHundredReposFiltered(filters)
+		} else {
+			repos, err = gh.GetLastHundredRepos()
+		}
+
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			e := fmt.Errorf("fail to get the repositories: %s", err.Error())

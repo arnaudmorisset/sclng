@@ -9,6 +9,11 @@ import (
 	"github.com/sourcegraph/conc/iter"
 )
 
+type Filters struct {
+	Language string
+	License  string
+}
+
 type Owner struct {
 	Login string `json:"login"`
 }
@@ -23,6 +28,7 @@ type Repo struct {
 
 type GithubClient interface {
 	GetLastHundredRepos() ([]Repo, error)
+	GetLastHundredReposFiltered(filters Filters) ([]Repo, error)
 }
 
 type GithubClientImpl struct {
@@ -35,6 +41,7 @@ func NewGithubClient(cfg config.GithubConfig, log logrus.FieldLogger) GithubClie
 	return GithubClientImpl{cfg: cfg, log: log, clt: req.C()}
 }
 
+// FIX: this method returns the first 100 repositories, not the last 100
 func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 	var repos []Repo
 
@@ -60,6 +67,17 @@ func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 		}
 		repo.Languages = languages
 	})
+
+	return repos, nil
+}
+
+func (g GithubClientImpl) GetLastHundredReposFiltered(filters Filters) ([]Repo, error) {
+	repos, err := g.GetLastHundredRepos()
+	if err != nil {
+		return repos, err
+	}
+
+	// TODO: filter the repositories based on the filters
 
 	return repos, nil
 }
