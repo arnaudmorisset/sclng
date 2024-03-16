@@ -11,10 +11,15 @@ import (
 	"github.com/arnaudmorisset/sclng/internal/github"
 )
 
+type LanguageStats struct {
+	Bytes int `json:"bytes"`
+}
+
 type Repo struct {
-	FullName   string `json:"full_name"`
-	Owner      string `json:"owner"`
-	Repository string `json:"repository"`
+	FullName   string                   `json:"full_name"`
+	Owner      string                   `json:"owner"`
+	Repository string                   `json:"repository"`
+	Languages  map[string]LanguageStats `json:"languages"`
 }
 
 type ReposResponse struct {
@@ -51,10 +56,16 @@ func NewReposHandler(cfg config.Config, gh github.GithubClient) handlers.Handler
 func toJSON(repos []github.Repo) ([]byte, error) {
 	resp := ReposResponse{}
 	for _, repo := range repos {
+		languageStats := make(map[string]LanguageStats)
+		for lang, bytes := range repo.Languages {
+			languageStats[lang] = LanguageStats{Bytes: bytes}
+		}
+
 		resp.Repositories = append(resp.Repositories, Repo{
 			FullName:   repo.FullName,
 			Owner:      repo.Owner.Login,
 			Repository: repo.Name,
+			Languages:  languageStats,
 		})
 	}
 

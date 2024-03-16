@@ -12,9 +12,11 @@ type Owner struct {
 }
 
 type Repo struct {
-	FullName string `json:"full_name"`
-	Owner    Owner  `json:"owner"`
-	Name     string `json:"name"`
+	FullName     string         `json:"full_name"`
+	Owner        Owner          `json:"owner"`
+	Name         string         `json:"name"`
+	LanguagesURL string         `json:"languages_url"`
+	Languages    map[string]int `json:"languages"`
 }
 
 type GithubClient interface {
@@ -30,7 +32,7 @@ func NewGithubClient(cfg config.GithubConfig) GithubClient {
 }
 
 func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
-	var resp []Repo
+	var repos []Repo
 
 	c := req.C()
 
@@ -38,12 +40,39 @@ func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 		SetHeader("Accept", "application/vnd.github+json").
 		SetHeader("X-GitHub-Api-Version", "2022-11-28").
 		SetBearerAuthToken(g.cfg.Token).
-		SetSuccessResult(&resp).
+		SetSuccessResult(&repos).
 		Get(g.cfg.BaseURL + "/repositories")
 
-	if err != nil {
-		return resp, fmt.Errorf("fail to get the repositories: %s", err.Error())
+	for i, repo := range repos {
+		languages, err := g.GetRepoLanguages(repo.LanguagesURL)
+		if err != nil {
+			return repos, fmt.Errorf("fail to get the languages for the repository %s: %s", repo.FullName, err.Error())
+		}
+		repos[i].Languages = languages
 	}
 
-	return resp, nil
+	if err != nil {
+		return repos, fmt.Errorf("fail to get the repositories: %s", err.Error())
+	}
+
+	return repos, nil
+}
+
+func (g GithubClientImpl) GetRepoLanguages(languagesURL string) (map[string]int, error) {
+	var languages map[string]int
+
+	c := req.C()
+
+	_, err := c.R().
+		SetHeader("Accept", "application/vnd.github+json").
+		SetHeader("X-GitHub-Api-Version", "2022-11-28").
+		SetBearerAuthToken(g.cfg.Token).
+		SetSuccessResult(&languages).
+		Get(languagesURL)
+
+	if err != nil {
+		return languages, fmt.Errorf("fail to get the languages for the repository %s: %s", languagesURL, err.Error())
+	}
+
+	return languages, nil
 }
