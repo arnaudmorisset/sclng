@@ -5,6 +5,7 @@ import (
 
 	"github.com/arnaudmorisset/sclng/internal/config"
 	"github.com/imroc/req/v3"
+	"github.com/sourcegraph/conc/iter"
 )
 
 type Owner struct {
@@ -43,17 +44,18 @@ func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 		SetSuccessResult(&repos).
 		Get(g.cfg.BaseURL + "/repositories")
 
-	for i, repo := range repos {
-		languages, err := g.GetRepoLanguages(repo.LanguagesURL)
-		if err != nil {
-			return repos, fmt.Errorf("fail to get the languages for the repository %s: %s", repo.FullName, err.Error())
-		}
-		repos[i].Languages = languages
-	}
-
 	if err != nil {
 		return repos, fmt.Errorf("fail to get the repositories: %s", err.Error())
 	}
+
+	// Done concurrently
+	iter.ForEach(repos, func(repo *Repo) {
+		languages, err := g.GetRepoLanguages(repo.LanguagesURL)
+		if err != nil {
+			return
+		}
+		repo.Languages = languages
+	})
 
 	return repos, nil
 }
