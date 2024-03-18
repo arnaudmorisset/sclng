@@ -11,7 +11,6 @@ import (
 
 type Filters struct {
 	Language string
-	License  string
 }
 
 type Owner struct {
@@ -27,8 +26,7 @@ type Repo struct {
 }
 
 type GithubClient interface {
-	GetLastHundredRepos() ([]Repo, error)
-	GetLastHundredReposFiltered(filters Filters) ([]Repo, error)
+	GetLastHundredRepos(filters Filters) ([]*Repo, error)
 }
 
 type GithubClientImpl struct {
@@ -41,8 +39,7 @@ func NewGithubClient(cfg config.GithubConfig, log logrus.FieldLogger) GithubClie
 	return GithubClientImpl{cfg: cfg, log: log, clt: req.C()}
 }
 
-// FIX: this method returns the first 100 repositories, not the last 100
-func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
+func (g GithubClientImpl) GetLastHundredRepos(filters Filters) ([]*Repo, error) {
 	var repos []Repo
 
 	g.log.Info("Getting the last 100 public repositories from Github")
@@ -54,32 +51,26 @@ func (g GithubClientImpl) GetLastHundredRepos() ([]Repo, error) {
 		Get(g.cfg.BaseURL + "/repositories")
 
 	if err != nil {
-		return repos, fmt.Errorf("fail to get the repositories: %s", err.Error())
+		return nil, fmt.Errorf("fail to get the repositories: %s", err.Error())
 	}
 
 	// Done concurrently
-	iter.ForEach(repos, func(repo *Repo) {
-		g.log.Info("Getting the languages for the repository ", repo.FullName)
+	reposWithLanguages := iter.Map(repos, func(repo *Repo) *Repo {
 		languages, err := g.GetRepoLanguages(repo.LanguagesURL)
 		if err != nil {
 			g.log.Error("Fail to get the languages for the repository ", repo.FullName, ": ", err.Error())
-			return
+			return repo
+		}
+		if filters.Language != "" {
+			if _, ok := languages[filters.Language]; !ok {
+				return nil
+			}
 		}
 		repo.Languages = languages
+		return repo
 	})
 
-	return repos, nil
-}
-
-func (g GithubClientImpl) GetLastHundredReposFiltered(filters Filters) ([]Repo, error) {
-	repos, err := g.GetLastHundredRepos()
-	if err != nil {
-		return repos, err
-	}
-
-	// TODO: filter the repositories based on the filters
-
-	return repos, nil
+	return cleanReposSlice(reposWithLanguages), nil
 }
 
 func (g GithubClientImpl) GetRepoLanguages(languagesURL string) (map[string]int, error) {
@@ -98,4 +89,14 @@ func (g GithubClientImpl) GetRepoLanguages(languagesURL string) (map[string]int,
 	}
 
 	return languages, nil
+}
+
+func cleanReposSlice(repos []*Repo) []*Repo {
+	var cleanedRepos []*Repo
+	for _, repo := range repos {
+		if repo != nil {
+			cleanedRepos = append(cleanedRepos, repo)
+		}
+	}
+	return cleanedRepos
 }

@@ -41,15 +41,9 @@ func NewReposHandler(cfg config.Config, gh github.GithubClient) handlers.Handler
 
 		filters := github.Filters{
 			Language: params.Get("language"),
-			License:  params.Get("license"),
 		}
 
-		var repos []github.Repo
-		if filters.Language != "" || filters.License != "" {
-			repos, err = gh.GetLastHundredReposFiltered(filters)
-		} else {
-			repos, err = gh.GetLastHundredRepos()
-		}
+		repos, err := gh.GetLastHundredRepos(filters)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -73,7 +67,7 @@ func NewReposHandler(cfg config.Config, gh github.GithubClient) handlers.Handler
 	}
 }
 
-func toJSON(repos []github.Repo) ([]byte, error) {
+func toJSON(repos []*github.Repo) ([]byte, error) {
 	resp := ReposResponse{}
 	for _, repo := range repos {
 		languageStats := make(map[string]LanguageStats)
