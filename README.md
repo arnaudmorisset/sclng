@@ -69,34 +69,42 @@ curl "http://localhost:8080/repos?language=go"
 ]
 ```
 
-<!-- # Canvas for Backend Technical Test at Scalingo
+## Design Decisions and Improvements
 
-## Instructions
+### Some cleaning before starting
 
-- From this canvas, respond to the project which has been communicated to you by our team
-- Feel free to change everything
+Before starting to work on the project, I cleaned up a bit.
+First, I removed the Docker-based development setup, opting for something lighter.
+Running the application is now done using a local installation of Go and Air, allowing fast live reloading.
+The inconvenience is that we now need to have requirements installed locally, but I still find it lightweight to install Go and Air rather than relying on Docker.
+Then, I changed the whole file structure of the project to be more aligned with standard Go recommendations for server software architecture: https://go.dev/doc/modules/layout#server-project
+I also removed Dave Chenney's error management package, as I prefer to follow standards when I can; the project now uses the `errors` package from the standard library.
 
-## Execution
+### Github Client and Configuration
 
-```
-docker compose up
-```
+I've isolated HTTP requests toward Github API in a dedicated Github Client package.
+The "sensible" information, such as the API key, is fetched by the configuration package from environment variables.
+The handler will rely on the GitHub client to fetch the data and only handle parsing incoming parameters and building the resulting view.
 
-Application will be then running on port `5000`
+### Concurrency
 
-## Test
+I usually handle concurrency manually by running closures using the `go` keyword, waiting on them using a waiting group, and stacking errors in a channel.
+This time, I chose to rely on a library to gain some time.
+One thing I usually dislike about Go concurrency API is that it's up to you to write the "glue" code to add the missing lifecycle orchestrator.
+The `conc` library by Sourcegraph is such a collection of utility functions that bring a mechanism of ownership over goroutines followed by nice utils functions.
+I use it to parse repository information (fetching programming language stats) through their iterator mechanism, and it's pleasant to use.
 
-```
-$ curl localhost:5000/ping
-{ "status": "pong" }
-```
+### Known Limitations & Failure
 
-## Notes
+My approach to this exercise was the wrong one.
+I decided to make it the best Go repo I could, but I've tried to bite off more than I could chew here.
+My initial goal was to restructure the project, implement the required features, add observability (logs, traces, and metrics), and a CI/CD pipeline to deploy the project to Scalingo.
+I was very optimistic regarding the time I could dedicate to this exercise, so everything went well, and the project has the current issues:
 
-> Things I should talk about to explain my tech choices.
+- The endpoint doesn't return the information about the last hundred repos but the first hundred ones. I didn't find anything on GitHub REST API (nor with the public repos endpoint or the search endpoint) to obtain information about the most recent repositories.
+- The project has no tests. In a real-world scenario, I would have added Unit Tests on the GitHub Client and integration tests on the handlers.
+- The only filter is by language. I needed more time to add more.
 
-- Moving to architecture recommended for Go servers
-- Removing docker for local env and using only air for live reload
-- Using stdlib for errors instead of Dave Chenney's package
-- Reworking main function
-- Secrets in env vars -->
+I'm pretty disappointed by my performance here, but still, it was a fun project and a nice challenge.
+Please don't hesitate to share feedback about my code structure and reasoning here.
+Thanks!
